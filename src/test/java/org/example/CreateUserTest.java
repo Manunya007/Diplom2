@@ -1,5 +1,6 @@
 package org.example;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -27,8 +28,9 @@ public void setUp() {
 }
 
 @DisplayName("Регистрация пользователя")
+@Description("Успешная регистрация пользователя")
     @Test
-    public void createUserReturn200() {
+    public void createUserReturn200Test() {
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
 userSteps
         .createUser(user)
@@ -36,9 +38,10 @@ userSteps
                 .body("success", is(true));
     }
 
-    @DisplayName("Регистрация пользователя, который уже существует")
+    @DisplayName("Регистрация дубликата пользователя")
+    @Description("Появление ошибки 403 при регистрации уже существующего пользователя")
     @Test
-    public void createDuplicateUserReturn403() {
+    public void createDuplicateUserReturn403Test() {
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
       userSteps
                 .createUser(user);
@@ -46,12 +49,15 @@ userSteps
       userSteps
                 .createUser(user)
                 .statusCode(SC_FORBIDDEN)
-                .body("success", is(false));
+                .body("success", is(false))
+              .body("message", is( "User already exists"));
     }
 
+
     @DisplayName("Регистрация пользователя без email")
+    @Description("Появление ошибки 403 при регистрации пользователя с незаполненным email")
     @Test
-    public void createUserEmailNullReturn403() {
+    public void createUserEmailNullReturn403Test() {
         User userWithoutEmail = new User()
                 .setPassword("rtuihjh")
                 .setName("Username");
@@ -59,12 +65,14 @@ userSteps
      userSteps
               .createUser(userWithoutEmail)
                 .statusCode(SC_FORBIDDEN)
-                .body("success", is(false));
+                .body("success", is(false))
+             .body("message", is("Email, password and name are required fields"));
     }
 
     @DisplayName("Регистрация пользователя без пароля")
+    @Description("Появление ошибки 403 при регистрации пользователя с незаполненным паролем")
     @Test
-    public void createUserPasswordNullReturn403() {
+    public void createUserPasswordNullReturn403Test() {
         User userWithoutPassword = new User()
                 .setEmail(RandomStringUtils.randomAlphabetic(12) + "@yandex.ru")
                 .setName("Username");
@@ -72,12 +80,14 @@ userSteps
         userSteps
                 .createUser(userWithoutPassword)
                 .statusCode(SC_FORBIDDEN)
-                .body("success", is(false));
+                .body("success", is(false))
+                .body("message", is("Email, password and name are required fields"));
     }
 
     @DisplayName("Регистрация пользователя без имени")
+    @Description("Появление ошибки 403 при регистрации пользователя с незаполненным именем")
     @Test
-    public void createUserUsernameNullReturn403() {
+    public void createUserUsernameNullReturn403Test() {
         User userWithoutName = new User()
                 .setEmail(RandomStringUtils.randomAlphabetic(12) + "@yandex.ru")
                 .setPassword("rtuihjh");
@@ -85,9 +95,9 @@ userSteps
         userSteps
                 .createUser(userWithoutName)
                 .statusCode(SC_FORBIDDEN)
-                .body("success", is(false));
-
-    }
+                .body("success", is(false))
+                .body("message", is("Email, password and name are required fields"));
+}
     @After
     public void tearDown() {
         if (user != null) {

@@ -1,5 +1,6 @@
 package org.example;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -25,14 +26,15 @@ public class LoginUserTest extends BaseTest{
         user.setEmail(RandomStringUtils.randomAlphabetic(12) + "@yandex.ru")
                 .setPassword("rtuihjh")
                 .setName("Username");
+        new UserSteps()
+                .createUser(user);
     }
 
     @DisplayName("Авторизация пользователя")
+    @Description("Успешная авторизация пользователя")
     @Test
-    public void authorizationUserReturn200() {
+    public void authorizationUserReturn200Test() {
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
-       userSteps
-               .createUser(user);
         userSteps
                 .loginUser(user)
                 .statusCode(SC_OK)
@@ -40,38 +42,38 @@ public class LoginUserTest extends BaseTest{
     }
 
     @DisplayName("Авторизация пользователя с некорректным email")
+    @Description("Появление ошибки 401 при авторизации пользователя с некорректным email")
     @Test
-    public void authorizationUserIncorrectEmailReturn401() {
+    public void authorizationUserIncorrectEmailReturn401Test() {
         User incorrectUser = new User()
                 .setEmail(RandomStringUtils.randomAlphabetic(12))
                         .setPassword(user.getPassword())
                                 .setName(user.getName());
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
         userSteps
-                .createUser(user);
-
-        userSteps
                 .loginUser(incorrectUser)
                 .statusCode(SC_UNAUTHORIZED)
-                .body("success", is(false));
+                .body("success", is(false))
+                .body("message", is("email or password are incorrect"));
     }
 
     @DisplayName("Авторизация пользователя с некорректным паролем")
+    @Description("Появление ошибки 401 при авторизации пользователя с некорректным паролем")
     @Test
-    public void authorizationUserIncorrectPasswordReturn401() {
+    public void authorizationUserIncorrectPasswordReturn401Test() {
         User incorrectUser = new User()
                 .setEmail(user.getEmail())
                 .setPassword("fhfhf")
                 .setName(user.getName());
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
-        userSteps
-                .createUser(user);
 userSteps
         .loginUser(incorrectUser)
 
                 .statusCode(SC_UNAUTHORIZED)
-                .body("success", is(false));
+                .body("success", is(false))
+        .body("message", is("email or password are incorrect"));
     }
+
     @After
     public void tearDown() {
         if (user != null) {

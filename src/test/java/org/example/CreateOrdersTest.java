@@ -1,5 +1,6 @@
 package org.example;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -29,6 +30,10 @@ public class CreateOrdersTest extends BaseTest{
         user.setEmail(RandomStringUtils.randomAlphabetic(12) + "@yandex.ru")
                 .setPassword("rtuihjh")
                 .setName("Username");
+        new UserSteps()
+                .createUser(user);
+        new UserSteps()
+                .loginUser(user);
         orders = new Orders();
         List<String> ingredientsList = Arrays.asList(
                 "61c0c5a71d1f82001bdaaa6d",
@@ -36,14 +41,11 @@ public class CreateOrdersTest extends BaseTest{
         orders.setIngredients(ingredientsList);
     }
 
-    @DisplayName("Создание заказа после авторизации с ингредиентами")
+    @DisplayName("Успешное создание заказа")
+    @Description("Создание заказа с ингредиентами после авторизации зарегистрированного пользователя")
     @Test
-    public void createOrdersReturn200() {
+    public void createOrdersReturn200Test() {
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
-       userSteps
-               .createUser(user);
-        userSteps
-                .loginUser(user);
 ordersSteps
         .createOrders(orders)
                 .statusCode(SC_OK)
@@ -51,46 +53,45 @@ ordersSteps
     }
 
     @DisplayName("Создание заказа без авторизации")
+    @Description("Появление ошибки 403 при создании заказа с ингредиентами без авторизации")
     @Test
-   public void createOrdersNoAuthorizationReturn403() {
+   public void createOrdersNoAuthorizationReturn403Test() {
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
-
+        ValidatableResponse response = userSteps.loginUser(user);
+            String token = response.extract().path("accessToken");
+                userSteps.deleteUser(token);
        ordersSteps
                .createOrders(orders)
                 .statusCode(SC_FORBIDDEN)
-               .body("success", is(false));
+               .body("success", is(false))
+               .body("message", is("You should be authorised"));
     }
 
-    @DisplayName("Создание заказа после авторизации без ингредиентов")
+    @DisplayName("Создание заказа без ингредиентов")
+    @Description("Появление ошибки 400 при создании заказа без ингредиентов после авторизации зарегистрированного пользователя")
     @Test
-    public void createOrdersNoIngredientsReturn400() {
+    public void createOrdersNoIngredientsReturn400Test() {
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
         List<String> noIngredientsList = List.of();
         Orders ordersWithoutIngredients = new Orders()
                 .setIngredients(noIngredientsList);
-        userSteps
-                .createUser(user);
-        userSteps
-                .loginUser(user);
        ordersSteps
                .createOrders(ordersWithoutIngredients)
                 .statusCode(SC_BAD_REQUEST)
-                .body("success", is(false));
+                .body("success", is(false))
+               .body("message", is("Ingredient ids must be provided"));
     }
 
-    @DisplayName("Создание заказа после авторизации с неверным хэшем ингредиентов")
+    @DisplayName("Создание заказа неверным хэшем ингредиентов")
+    @Description("Появление ошибки 500 при создании заказа с неверным хэшем ингредиентов после авторизации зарегистрированного пользователя")
     @Test
-    public void createOrdersIncorrectHashIngredientsReturn500() {
+    public void createOrdersIncorrectHashIngredientsReturn500Test() {
         List<String> incorrectIngredientsList = Arrays.asList(
                 "61c0c1bdaaa6d",
                 "61c0c5aaaa6f");
         Orders ordersIncorrectIngredients = new Orders()
                 .setIngredients(incorrectIngredientsList);
         RestAssured.filters(new RequestLoggingFilter(), new RequestLoggingFilter());
-      userSteps
-              .createUser(user);
-        userSteps
-                .loginUser(user);
        ordersSteps
                .createOrders(ordersIncorrectIngredients)
                 .statusCode(SC_INTERNAL_SERVER_ERROR);
